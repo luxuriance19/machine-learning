@@ -27,7 +27,7 @@ def scanD(D, Ck, minSupport):
 
 
 
-def aprioriGen(Lk, k): #creates Ck
+def aprioriGen(Lk, k): #creates Ck ,产生新的频繁项集
     retList = []
     lenLk = len(Lk)
     for i in range(lenLk):
@@ -53,6 +53,40 @@ def apriori(dataSet, minSupport = 0.5):
         L.append(Lk)
         k += 1
     return L, supportData
+    
+def generateRules(L, supportData, minConf=0.7):  
+    bigRuleList = []
+    for i in range(1, len(L)):    #舍弃只有一个类别的项          
+        for freqSet in L[i]:
+            H1 = [frozenset([item]) for item in freqSet]
+            if (i > 1): # 当频繁项集的个数超过2，考虑做进一步合并，e.g.H1=[{1},{2},{3}],这个时候可信度组合可以是(12)=>(3)
+                rulesFromConseq(freqSet, H1, supportData, bigRuleList,\
+                                minConf)
+            else:
+                calcConf(freqSet, H1, supportData, bigRuleList, minConf) 
+    return bigRuleList
+    
+## 计算可信度时，e.g.如果由集合{1,2,3,4},首先计算{1,2,3}->{4}即三项到四项，
+## 因为如果{1,2,3}->{4}不满足可信度要求，那么{1,2}->{3,4}也不会满足可信度要求，按照条件概率即可求解
+def calcConf(freqSet, H, supportData, brl, minConf=0.7): #brl:bigRuleList; 
+    prunedH = [] 
+    for conseq in H:
+        conf = supportData[freqSet]/supportData[freqSet-conseq] #可信度计算， freqSet-conseq,这里的"-"相当于差集
+        if conf >= minConf:  # 当可信度大于最小可信度时，放在bigRuleList列表中
+            print(freqSet-conseq,'-->',conseq,'conf:',conf) # 由freqSet-conseq=>conseq的可信度
+            brl.append((freqSet-conseq, conseq, conf))
+            prunedH.append(conseq)
+    return prunedH
+    
+def rulesFromConseq(freqSet, H, supportData, brl, minConf=0.7):
+    # print("H",H)
+    m = len(H[0]) 
+    # print("m",m)
+    if (len(freqSet) > (m + 1)): # 即此时直接len(freqSet-H)>1                        
+        Hmp1 = aprioriGen(H, m + 1) # Hmp1:即生成元素大小为(m+1)集合的列表 e.g.Hmp1=[frozenset{1,2},frozenset{2,3}]
+        Hmp1 = calcConf(freqSet, Hmp1, supportData, brl, minConf) #calcConf返回满足可信度要求的关联项
+        if (len(Hmp1) > 1): 
+            rulesFromConseq(freqSet, Hmp1, supportData, brl, minConf)
 
 if __name__ == "__main__"
     dataset = loadDataSet()
@@ -61,4 +95,5 @@ if __name__ == "__main__"
     D = list(map(set,dataset))
     L1,suppData0 = scanD(D,C1,0.5)
     L,suppData=apriori(dataset)
+    generateRules(L, suppData)
 

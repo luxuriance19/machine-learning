@@ -38,7 +38,7 @@ def aprioriGen(Lk, k): #creates Ck ,产生新的频繁项集
             L1.sort(); L2.sort()                           
             if L1==L2:
                 # print(Lk[i],Lk[j],Lk[i]|Lk[j])
-                retList.append(Lk[i] | Lk[j]) 
+                retList.append(Lk[i] | Lk[j]) # Python中操作符|代表数学中的U操作
     return retList
 def apriori(dataSet, minSupport = 0.5):
     C1 = createC1(dataSet)
